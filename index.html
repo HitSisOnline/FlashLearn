@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashLearn - Simple Flashcard App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>FlashLearn</h1>
+        
+        <!-- Add new flashcard form -->
+        <form id="add-card-form">
+            <div class="form-group">
+                <label for="question">Question:</label>
+                <textarea id="question" placeholder="Enter your question here..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="answer">Answer:</label>
+                <textarea id="answer" placeholder="Enter the answer here..." required></textarea>
+            </div>
+            <button type="submit">Add Flashcard</button>
+        </form>
+
+        <!-- Card display area -->
+        <div class="card-display">
+            <div class="card-info">
+                <span id="card-counter">No cards available</span>
+            </div>
+            
+            <div id="card-container">
+                <div class="no-cards">
+                    Create your first flashcard to get started!
+                </div>
+            </div>
+            
+            <!-- Navigation controls -->
+            <div class="controls">
+                <button id="prev-btn" disabled>← Previous</button>
+                <button id="flip-btn" disabled>Flip Card</button>
+                <button id="next-btn" disabled>Next →</button>
+                <button id="delete-btn" class="delete-btn" disabled>Delete Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
