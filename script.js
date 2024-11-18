@@ -2,6 +2,7 @@
 let cards = []; // Array to store all flashcard objects
 let currentCardIndex = 0; // Index of currently displayed card
 let showingQuestion = true; // Track if we're showing question or answer
+let isStudyMode = false; // Track if we're in study mode
 
 // LocalStorage key for persistence
 const STORAGE_KEY = 'flashlearn-cards';
@@ -16,6 +17,10 @@ const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 const flipBtn = document.getElementById('flip-btn');
 const deleteBtn = document.getElementById('delete-btn');
+const startStudyBtn = document.getElementById('start-study-btn');
+const exitStudyBtn = document.getElementById('exit-study-btn');
+const studyProgress = document.getElementById('study-progress');
+const progressText = document.getElementById('progress-text');
 
 // Event listeners setup
 addCardForm.addEventListener('submit', handleAddCard);
@@ -23,6 +28,8 @@ prevBtn.addEventListener('click', showPreviousCard);
 nextBtn.addEventListener('click', showNextCard);
 flipBtn.addEventListener('click', flipCard);
 deleteBtn.addEventListener('click', deleteCurrentCard);
+startStudyBtn.addEventListener('click', enterStudyMode);
+exitStudyBtn.addEventListener('click', exitStudyMode);
 
 console.log('FlashLearn app initialized with separate JS file'); // Debug log
 
@@ -164,6 +171,11 @@ function updateDisplay() {
     // Update the counter with current position and type
     cardCounter.textContent = `Card ${currentCardIndex + 1} of ${cards.length} (${cardType})`;
     
+    // Update study mode progress if active
+    if (isStudyMode) {
+        updateStudyProgress();
+    }
+    
     // Update navigation button states
     updateButtonStates();
     
@@ -184,7 +196,10 @@ function updateButtonStates() {
     prevBtn.disabled = !hasCards || currentCardIndex === 0;
     nextBtn.disabled = !hasCards || currentCardIndex === cards.length - 1;
     flipBtn.disabled = !hasCards;
-    deleteBtn.disabled = !hasCards;
+    deleteBtn.disabled = !hasCards || isStudyMode; // Disable delete in study mode
+    
+    // Study mode button states
+    startStudyBtn.disabled = !hasCards;
 }
 
 /**
@@ -257,6 +272,70 @@ function deleteCurrentCard() {
         updateDisplay();
         
         console.log('Card deleted, remaining cards:', cards.length); // Debug log
+    }
+}
+
+/**
+ * Enter study mode - hide form controls and focus on review
+ */
+function enterStudyMode() {
+    if (cards.length === 0) return;
+    
+    isStudyMode = true;
+    document.body.classList.add('study-mode');
+    
+    // Reset to first card for systematic review
+    currentCardIndex = 0;
+    showingQuestion = true;
+    
+    // Update UI elements
+    startStudyBtn.classList.add('hidden');
+    exitStudyBtn.classList.remove('hidden');
+    studyProgress.classList.remove('hidden');
+    cardCounter.classList.add('hidden');
+    
+    updateDisplay();
+    console.log('Entered study mode'); // Debug log
+}
+
+/**
+ * Exit study mode - restore normal editing interface
+ */
+function exitStudyMode() {
+    isStudyMode = false;
+    document.body.classList.remove('study-mode');
+    
+    // Reset UI elements
+    startStudyBtn.classList.remove('hidden');
+    exitStudyBtn.classList.add('hidden');
+    studyProgress.classList.add('hidden');
+    cardCounter.classList.remove('hidden');
+    
+    updateDisplay();
+    console.log('Exited study mode'); // Debug log
+}
+
+/**
+ * Update study progress indicator
+ */
+function updateStudyProgress() {
+    if (!isStudyMode) return;
+    
+    const progress = currentCardIndex + 1;
+    const total = cards.length;
+    progressText.textContent = `${progress} / ${total}`;
+    
+    // Add completion message when finished
+    if (progress === total && !showingQuestion) {
+        setTimeout(() => {
+            if (confirm('🎉 Study session complete! Would you like to start over?')) {
+                currentCardIndex = 0;
+                showingQuestion = true;
+                updateDisplay();
+            } else {
+                exitStudyMode();
+            }
+        }, 1000);
     }
 }
 

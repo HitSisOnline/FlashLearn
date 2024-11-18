@@ -10,6 +10,12 @@
     <div class="container">
         <h1>FlashLearn</h1>
         
+        <!-- Study Mode Toggle -->
+        <div class="study-mode-controls">
+            <button id="start-study-btn" type="button">🎯 Start Study Mode</button>
+            <button id="exit-study-btn" type="button" class="hidden">📖 Exit Study Mode</button>
+        </div>
+        
         <!-- Add new flashcard form -->
         <form id="add-card-form">
             <div class="form-group">
@@ -27,6 +33,7 @@
         <div class="card-display">
             <div class="card-info">
                 <span id="card-counter">No cards available</span>
+                <span id="study-progress" class="hidden">Progress: <span id="progress-text">0 / 0</span></span>
             </div>
             
             <div id="card-container">

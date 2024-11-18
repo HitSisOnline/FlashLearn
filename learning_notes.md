@@ -72,3 +72,65 @@ Finally tackled the persistence issue! Cards now save automatically to localStor
 **Next priorities:**
 - Study mode for focused review sessions
 - Maybe deck organization for different subjects
+
+## 2024-11-18
+**Added Study Mode for focused review**
+
+Implemented a dedicated study mode that really improves the learning experience:
+- Toggle between normal editing and focused study interface
+- Progress tracking shows "Progress: 3 / 10" style indicators  
+- Automatically starts from first card for systematic review
+- Disables editing functions (like delete) to prevent accidents
+- Celebration message when completing a study session
+
+**Technical implementation:**
+- Used CSS classes (.study-mode) to toggle UI states
+- Added new DOM elements for progress tracking
+- Mode switching through simple boolean flag (isStudyMode)
+- Event delegation keeps code clean and organized
+
+**UX insights:**
+- Hiding the form during study reduces distractions significantly
+- Progress indicator provides motivation to complete sessions
+- Starting from card 1 each time feels more systematic
+- The completion celebration encourages continued use
+
+**What I learned:**
+- CSS class toggling is powerful for mode switching
+- setTimeout for delayed interactions (completion dialog) works well
+- User feedback (progress, completion) is crucial for engagement
+
+**Next steps:**
+- Deck organization for subject separation (Math, History, etc.)
+- Maybe card shuffle option for variety
+
+## 2024-11-18
+**Added Study Mode functionality**
+
+Implemented a focused study mode that hides editing controls and provides sequential review:
+- "Start Study Mode" button that switches to review-only interface
+- Progress indicator showing "current / total" cards reviewed
+- Auto-disables delete button during study to prevent accidents
+- Completion message with option to restart or exit when reaching the end
+- Clean UI toggle between normal and study modes
+
+**Technical implementation:**
+- Added `isStudyMode` boolean flag and CSS class toggling
+- New functions: `enterStudyMode()`, `exitStudyMode()`, `updateStudyProgress()`
+- DOM manipulation to show/hide relevant UI elements
+- Smart button state management based on current mode
+
+**UX insights:**
+- Study mode feels much more focused without the form distractions
+- Progress indicator gives good sense of accomplishment
+- Starting from card 1 each session provides consistency
+- Completion celebration encourages continued use
+
+**What I learned:**
+- CSS class toggling is powerful for mode switching
+- setTimeout with user confirmation creates nice flow for session completion
+- Conditional logic in existing functions (like updateButtonStates) keeps code clean
+
+**TODO for next time:**
+- Deck organization for different subjects
+- Maybe keyboard shortcuts for faster navigation

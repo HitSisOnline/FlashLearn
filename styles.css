@@ -58,6 +58,22 @@ h1 {
     text-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
 }
 
+/* Study Mode Controls */
+.study-mode-controls {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.study-mode-controls button {
+    background: var(--accent-color);
+    margin: 5px 10px;
+}
+
+.study-mode-controls button:hover {
+    background: #059669;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+}
+
 /* Form styling with improved spacing */
 .form-group {
     margin-bottom: 24px;
@@ -182,6 +198,32 @@ button.delete-btn:hover:not(:disabled) {
     font-size: 15px;
     color: var(--text-muted);
     font-weight: 500;
+}
+
+#study-progress {
+    display: block;
+    margin-top: 5px;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+/* Study mode specific styles */
+.study-mode #add-card-form {
+    display: none;
+}
+
+.study-mode .container {
+    max-width: 600px;
+}
+
+.study-mode .card {
+    min-height: 250px;
+    font-size: 1.1rem;
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
 }
 
 /* Enhanced controls layout with better flexbox */
