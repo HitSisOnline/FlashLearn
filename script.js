@@ -1,11 +1,14 @@
 // Global variables to store our flashcards and current state
 let cards = []; // Array to store all flashcard objects
+let decks = []; // Array to store deck objects
 let currentCardIndex = 0; // Index of currently displayed card
 let showingQuestion = true; // Track if we're showing question or answer
 let isStudyMode = false; // Track if we're in study mode
+let currentDeckId = 'default'; // Currently selected deck
 
-// LocalStorage key for persistence
+// LocalStorage keys for persistence
 const STORAGE_KEY = 'flashlearn-cards';
+const DECKS_STORAGE_KEY = 'flashlearn-decks';
 
 // DOM element references - cache these for better performance
 const addCardForm = document.getElementById('add-card-form');
@@ -21,6 +24,8 @@ const startStudyBtn = document.getElementById('start-study-btn');
 const exitStudyBtn = document.getElementById('exit-study-btn');
 const studyProgress = document.getElementById('study-progress');
 const progressText = document.getElementById('progress-text');
+const deckSelect = document.getElementById('deck-select');
+const newDeckBtn = document.getElementById('new-deck-btn');
 
 // Event listeners setup
 addCardForm.addEventListener('submit', handleAddCard);
@@ -30,6 +35,8 @@ flipBtn.addEventListener('click', flipCard);
 deleteBtn.addEventListener('click', deleteCurrentCard);
 startStudyBtn.addEventListener('click', enterStudyMode);
 exitStudyBtn.addEventListener('click', exitStudyMode);
+deckSelect.addEventListener('change', handleDeckChange);
+newDeckBtn.addEventListener('click', createNewDeck);
 
 console.log('FlashLearn app initialized with separate JS file'); // Debug log
 
@@ -94,6 +101,67 @@ function loadCards() {
 }
 
 /**
+ * Save decks to localStorage
+ */
+function saveDecks() {
+    try {
+        const decksData = {
+            version: '1.0',
+            decks: decks,
+            lastModified: new Date().toISOString()
+        };
+        localStorage.setItem(DECKS_STORAGE_KEY, JSON.stringify(decksData));
+        console.log('Decks saved to localStorage:', decks.length);
+    } catch (error) {
+        console.error('Failed to save decks to localStorage:', error);
+    }
+}
+
+/**
+ * Load decks from localStorage
+ */
+function loadDecks() {
+    try {
+        const savedData = localStorage.getItem(DECKS_STORAGE_KEY);
+        if (!savedData) {
+            // Create default deck if none exist
+            decks = [{
+                id: 'default',
+                name: 'Default Deck',
+                created: new Date().toLocaleDateString(),
+                description: 'Your main flashcard collection'
+            }];
+            saveDecks();
+            return;
+        }
+        
+        const parsedData = JSON.parse(savedData);
+        decks = parsedData.decks || [];
+        
+        // Ensure default deck exists
+        if (!decks.find(deck => deck.id === 'default')) {
+            decks.unshift({
+                id: 'default',
+                name: 'Default Deck',
+                created: new Date().toLocaleDateString(),
+                description: 'Your main flashcard collection'
+            });
+        }
+        
+        console.log('Loaded decks from localStorage:', decks.length);
+        
+    } catch (error) {
+        console.error('Failed to load decks from localStorage:', error);
+        decks = [{
+            id: 'default',
+            name: 'Default Deck',
+            created: new Date().toLocaleDateString(),
+            description: 'Your main flashcard collection'
+        }];
+    }
+}
+
+/**
  * Handle form submission to add a new flashcard
  * Validates input and creates new card object
  */
@@ -120,6 +188,7 @@ function handleAddCard(event) {
         id: Date.now(), // Simple ID generation using timestamp
         question: question,
         answer: answer,
+        deckId: currentDeckId, // Associate with current deck
         created: new Date().toLocaleDateString(),
         timesReviewed: 0 // Track how many times this card has been viewed
     };
@@ -149,15 +218,24 @@ function handleAddCard(event) {
  * Handles both content and UI state updates
  */
 function updateDisplay() {
-    if (cards.length === 0) {
+    // Filter cards by current deck
+    const currentDeckCards = getCardsForCurrentDeck();
+    
+    if (currentDeckCards.length === 0) {
         // No cards available - show empty state
-        cardContainer.innerHTML = '<div class="no-cards">Create your first flashcard to get started!</div>';
+        const deckName = decks.find(d => d.id === currentDeckId)?.name || 'Current Deck';
+        cardContainer.innerHTML = `<div class="no-cards">No flashcards in "${deckName}" yet.<br>Create your first card to get started!</div>`;
         cardCounter.textContent = 'No cards available';
         disableAllButtons();
         return;
     }
     
-    const currentCard = cards[currentCardIndex];
+    // Make sure currentCardIndex is valid for filtered cards
+    if (currentCardIndex >= currentDeckCards.length) {
+        currentCardIndex = 0;
+    }
+    
+    const currentCard = currentDeckCards[currentCardIndex];
     const content = showingQuestion ? currentCard.question : currentCard.answer;
     const cardType = showingQuestion ? 'Question' : 'Answer';
     
@@ -169,7 +247,7 @@ function updateDisplay() {
     `;
     
     // Update the counter with current position and type
-    cardCounter.textContent = `Card ${currentCardIndex + 1} of ${cards.length} (${cardType})`;
+    cardCounter.textContent = `Card ${currentCardIndex + 1} of ${currentDeckCards.length} (${cardType})`;
     
     // Update study mode progress if active
     if (isStudyMode) {
@@ -182,6 +260,7 @@ function updateDisplay() {
     // Track card views when showing answer
     if (!showingQuestion) {
         currentCard.timesReviewed++;
+        saveCards(); // Save the updated review count
     }
 }
 
@@ -190,11 +269,12 @@ function updateDisplay() {
  * Prevents navigation beyond array bounds
  */
 function updateButtonStates() {
-    const hasCards = cards.length > 0;
+    const currentDeckCards = getCardsForCurrentDeck();
+    const hasCards = currentDeckCards.length > 0;
     
     // Enable/disable navigation buttons based on position
     prevBtn.disabled = !hasCards || currentCardIndex === 0;
-    nextBtn.disabled = !hasCards || currentCardIndex === cards.length - 1;
+    nextBtn.disabled = !hasCards || currentCardIndex === currentDeckCards.length - 1;
     flipBtn.disabled = !hasCards;
     deleteBtn.disabled = !hasCards || isStudyMode; // Disable delete in study mode
     
@@ -252,26 +332,32 @@ function flipCard() {
  * Handles index adjustment and edge cases
  */
 function deleteCurrentCard() {
-    if (cards.length === 0) return;
+    const currentDeckCards = getCardsForCurrentDeck();
+    if (currentDeckCards.length === 0) return;
     
-    const currentCard = cards[currentCardIndex];
+    const currentCard = currentDeckCards[currentCardIndex];
     const confirmMessage = `Are you sure you want to delete this card?\n\n"${currentCard.question.substring(0, 50)}..."`;
     
     if (confirm(confirmMessage)) {
-        cards.splice(currentCardIndex, 1);
+        // Find and remove the card from the main cards array
+        const cardIndex = cards.findIndex(card => card.id === currentCard.id);
+        if (cardIndex > -1) {
+            cards.splice(cardIndex, 1);
+        }
         
         // Save to localStorage after deletion
         saveCards();
         
-        // Adjust current index if we deleted the last card
-        if (currentCardIndex >= cards.length && cards.length > 0) {
-            currentCardIndex = cards.length - 1;
+        // Adjust current index if we deleted the last card in current deck
+        const updatedDeckCards = getCardsForCurrentDeck();
+        if (currentCardIndex >= updatedDeckCards.length && updatedDeckCards.length > 0) {
+            currentCardIndex = updatedDeckCards.length - 1;
         }
         
         showingQuestion = true;
         updateDisplay();
         
-        console.log('Card deleted, remaining cards:', cards.length); // Debug log
+        console.log('Card deleted, remaining cards in deck:', updatedDeckCards.length);
     }
 }
 
@@ -279,7 +365,8 @@ function deleteCurrentCard() {
  * Enter study mode - hide form controls and focus on review
  */
 function enterStudyMode() {
-    if (cards.length === 0) return;
+    const currentDeckCards = getCardsForCurrentDeck();
+    if (currentDeckCards.length === 0) return;
     
     isStudyMode = true;
     document.body.classList.add('study-mode');
@@ -295,7 +382,7 @@ function enterStudyMode() {
     cardCounter.classList.add('hidden');
     
     updateDisplay();
-    console.log('Entered study mode'); // Debug log
+    console.log('Entered study mode for deck:', currentDeckId);
 }
 
 /**
@@ -321,8 +408,9 @@ function exitStudyMode() {
 function updateStudyProgress() {
     if (!isStudyMode) return;
     
+    const currentDeckCards = getCardsForCurrentDeck();
     const progress = currentCardIndex + 1;
-    const total = cards.length;
+    const total = currentDeckCards.length;
     progressText.textContent = `${progress} / ${total}`;
     
     // Add completion message when finished
@@ -340,19 +428,95 @@ function updateStudyProgress() {
 }
 
 /**
+ * Get cards filtered by current deck
+ */
+function getCardsForCurrentDeck() {
+    return cards.filter(card => card.deckId === currentDeckId);
+}
+
+/**
+ * Handle deck selection change
+ */
+function handleDeckChange(event) {
+    currentDeckId = event.target.value;
+    currentCardIndex = 0;
+    showingQuestion = true;
+    
+    // Exit study mode when switching decks
+    if (isStudyMode) {
+        exitStudyMode();
+    }
+    
+    updateDisplay();
+    console.log('Switched to deck:', currentDeckId);
+}
+
+/**
+ * Create a new deck
+ */
+function createNewDeck() {
+    const deckName = prompt('Enter a name for the new deck:');
+    if (!deckName || !deckName.trim()) return;
+    
+    const newDeck = {
+        id: 'deck_' + Date.now(),
+        name: deckName.trim(),
+        created: new Date().toLocaleDateString(),
+        description: `Custom deck: ${deckName.trim()}`
+    };
+    
+    decks.push(newDeck);
+    saveDecks();
+    updateDeckSelect();
+    
+    // Switch to new deck
+    currentDeckId = newDeck.id;
+    deckSelect.value = currentDeckId;
+    currentCardIndex = 0;
+    showingQuestion = true;
+    updateDisplay();
+    
+    console.log('Created new deck:', newDeck.name);
+}
+
+/**
+ * Update the deck selection dropdown
+ */
+function updateDeckSelect() {
+    deckSelect.innerHTML = '';
+    
+    decks.forEach(deck => {
+        const option = document.createElement('option');
+        option.value = deck.id;
+        option.textContent = deck.name;
+        deckSelect.appendChild(option);
+    });
+    
+    deckSelect.value = currentDeckId;
+}
+
+/**
  * Initialize the application
  * Load saved data and set up initial state
  */
 function initializeApp() {
-    // Load any previously saved cards first
+    // Load any previously saved decks and cards
+    loadDecks();
     loadCards();
+    
+    // Set up deck selector
+    updateDeckSelect();
     
     updateDisplay();
     questionInput.focus(); // Focus on first input for immediate use
     
     // TODO: Add keyboard shortcuts for navigation (Space for flip, arrows for prev/next)
+    // TODO: Add deck rename/delete functionality
     // Save data periodically as backup (every 30 seconds)
-    setInterval(saveCards, 30000);
+    setInterval(() => {
+        saveCards();
+        saveDecks();
+    }, 30000);
 }
 
 // Start the app when DOM is ready

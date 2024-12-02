@@ -104,6 +104,46 @@ Implemented a dedicated study mode that really improves the learning experience:
 - Deck organization for subject separation (Math, History, etc.)
 - Maybe card shuffle option for variety
 
+## 2024-12-02
+**Added Deck Organization System**
+
+Implemented a complete deck system for organizing flashcards by subject or topic:
+- Created deck objects with ID, name, creation date, and description
+- Added dropdown selector to switch between decks instantly
+- Simple "New Deck" button with prompt-based creation
+- Cards now have deckId property to associate them with specific decks
+- Automatic filtering shows only cards from the currently selected deck
+
+**Technical implementation:**
+- New localStorage key for deck persistence (flashlearn-decks)
+- Separate deck management functions (saveDecks, loadDecks, updateDeckSelect)
+- Modified card display logic to filter by currentDeckId
+- Updated all navigation to work with filtered card arrays
+- Added deck switching logic that resets card position
+
+**Data structure decisions:**
+- Each card has deckId property linking it to a deck
+- Default deck (id: 'default') always exists for backward compatibility
+- Deck IDs use timestamp-based generation like cards
+- Cards filter in real-time based on selected deck
+
+**UX considerations:**
+- Deck controls hidden during study mode to reduce distractions
+- Switching decks automatically exits study mode for clarity
+- New deck creation immediately switches to that deck
+- Default deck ensures existing cards remain accessible
+
+**Limitations intentionally left for now:**
+- No deck rename/delete functionality (kept simple)
+- No deck import/export (TODO for future)
+- No card moving between decks (can be added later)
+
+**What I learned:**
+- Filtering arrays in real-time works smoothly for this use case
+- Dropdown state management needs careful attention
+- Having a default deck prevents edge cases with empty deck lists
+- Simple prompt() for deck creation is enough for MVP
+
 ## 2024-11-18
 **Added Study Mode functionality**
 
