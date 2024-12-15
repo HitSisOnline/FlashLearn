@@ -26,6 +26,7 @@ const studyProgress = document.getElementById('study-progress');
 const progressText = document.getElementById('progress-text');
 const deckSelect = document.getElementById('deck-select');
 const newDeckBtn = document.getElementById('new-deck-btn');
+const keyboardHints = document.getElementById('keyboard-hints');
 
 // Event listeners setup
 addCardForm.addEventListener('submit', handleAddCard);
@@ -37,6 +38,9 @@ startStudyBtn.addEventListener('click', enterStudyMode);
 exitStudyBtn.addEventListener('click', exitStudyMode);
 deckSelect.addEventListener('change', handleDeckChange);
 newDeckBtn.addEventListener('click', createNewDeck);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', handleKeyboardShortcuts);
 
 console.log('FlashLearn app initialized with separate JS file'); // Debug log
 
@@ -496,6 +500,50 @@ function updateDeckSelect() {
 }
 
 /**
+ * Handle keyboard shortcuts for better UX
+ */
+function handleKeyboardShortcuts(event) {
+    // Don't interfere if user is typing in form fields
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.tagName === 'SELECT') {
+        return;
+    }
+    
+    const currentDeckCards = getCardsForCurrentDeck();
+    if (currentDeckCards.length === 0) return;
+    
+    switch (event.code) {
+        case 'Space':
+            event.preventDefault();
+            flipCard();
+            break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            showPreviousCard();
+            break;
+        case 'ArrowRight':
+            event.preventDefault();
+            showNextCard();
+            break;
+        case 'KeyS':
+            if (event.ctrlKey || event.metaKey) {
+                event.preventDefault();
+                if (isStudyMode) {
+                    exitStudyMode();
+                } else {
+                    enterStudyMode();
+                }
+            }
+            break;
+        case 'Escape':
+            if (isStudyMode) {
+                event.preventDefault();
+                exitStudyMode();
+            }
+            break;
+    }
+}
+
+/**
  * Initialize the application
  * Load saved data and set up initial state
  */
@@ -510,13 +558,28 @@ function initializeApp() {
     updateDisplay();
     questionInput.focus(); // Focus on first input for immediate use
     
-    // TODO: Add keyboard shortcuts for navigation (Space for flip, arrows for prev/next)
-    // TODO: Add deck rename/delete functionality
+    // Show keyboard shortcuts hint to user
+    console.log('💡 Keyboard shortcuts: Space (flip), ← → (navigate), Ctrl+S (toggle study mode), Esc (exit study)');
+    
+    // Show keyboard hints briefly on load
+    showKeyboardHints();
+    
+    // TODO: Add card shuffle option for variety
     // Save data periodically as backup (every 30 seconds)
     setInterval(() => {
         saveCards();
         saveDecks();
     }, 30000);
+}
+
+/**
+ * Show keyboard hints temporarily
+ */
+function showKeyboardHints() {
+    keyboardHints.classList.add('show');
+    setTimeout(() => {
+        keyboardHints.classList.remove('show');
+    }, 4000); // Hide after 4 seconds
 }
 
 // Start the app when DOM is ready
