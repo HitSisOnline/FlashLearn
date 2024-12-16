@@ -31,9 +31,6 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     padding: 20px;
 }
 
@@ -43,7 +40,8 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     width: 100%;
-    max-width: 550px;
+    max-width: 1200px; /* Much wider for laptops/desktops */
+    margin: 0 auto; /* Center the container */
     /* Experimental CSS property I found online */
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
@@ -70,7 +68,7 @@ h1 {
 .deck-selector {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     flex-wrap: wrap;
 }
 
@@ -79,11 +77,13 @@ h1 {
     color: var(--text-color);
     margin-bottom: 0;
     white-space: nowrap;
+    min-width: 100px;
 }
 
 .deck-selector select {
     flex: 1;
-    min-width: 150px;
+    min-width: 200px;
+    max-width: 300px;
     padding: 10px 12px;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius-small);
@@ -138,6 +138,15 @@ h1 {
 /* Form styling with improved spacing */
 .form-group {
     margin-bottom: 24px;
+}
+
+.form-group.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-group.form-row > div {
+    flex: 1;
 }
 
 label {
@@ -278,7 +287,7 @@ button.delete-btn:hover:not(:disabled) {
 }
 
 .study-mode .container {
-    max-width: 600px;
+    max-width: 700px; /* Slightly wider for study mode */
 }
 
 .study-mode .card {
@@ -306,29 +315,39 @@ button.delete-btn:hover:not(:disabled) {
 }
 
 /* Enhanced responsive design */
-@media (max-width: 650px) {
+@media (max-width: 900px) {
     .container {
-        padding: 25px;
-        margin: 10px;
-    }
-    
-    h1 {
-        font-size: 1.9rem;
-        margin-bottom: 25px;
+        max-width: 650px;
+        padding: 30px;
     }
     
     .deck-selector {
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
     }
     
     .deck-selector label {
         margin-bottom: 8px;
+        min-width: auto;
     }
     
     .deck-selector select {
-        margin-bottom: 10px;
         min-width: auto;
+        max-width: none;
+    }
+}
+
+@media (max-width: 650px) {
+    .container {
+        padding: 25px;
+        margin: 10px;
+        max-width: none;
+    }
+    
+    h1 {
+        font-size: 1.9rem;
+        margin-bottom: 25px;
     }
     
     .controls {
