@@ -35,7 +35,18 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
    - **Esc**: Exit study mode
 
 ## Screenshots
-*[Screenshots would be placed here showing the main interface, study mode, and deck selection]*
+
+### Main Interface
+![Main Interface](screenshots/main-interface.png)
+*The main flashcard interface with deck selection and card management*
+
+### Study Mode
+![Study Mode](screenshots/study-mode.png)
+*Focused study mode with progress tracking and minimal distractions*
+
+### Mobile View
+![Mobile Responsive](screenshots/mobile-view.png)
+*Responsive design works great on mobile devices*
 
 ## Technical Details
 
@@ -58,9 +69,10 @@ Started this as a class project in October 2024, then kept improving it:
 - **Oct 2024**: Initial prototype for web dev coursework
 - **Nov 2024**: Added persistence and study features during semester break
 - **Dec 2024**: Final touches while learning more CSS/JS patterns
+- **Dec 2024**: Added deck deletion after realizing I needed it while using the app
 
 ## What I Learned
-Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and responsive design. The biggest challenge was figuring out the deck filtering logic - took me way longer than expected!
+Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and responsive design. The biggest challenge was figuring out the deck filtering logic - took me way longer than expected! Also learned the importance of actually using your own software - that's how I discovered I needed deck deletion.
 
 ## Known Issues & Notes
 - **Safari Card Flips**: Safari sometimes has weird flip animations (need to investigate CSS transforms)
@@ -72,10 +84,15 @@ Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and 
 
 ## Future Enhancements
 
-- Persistent storage using localStorage
-- Study modes and progress tracking
-- Card categories/decks
-- Import/export functionality
+- Search and filtering for large card collections
+- Spaced repetition algorithm for better memory retention
+- Import/export functionality for sharing decks
+- Cloud sync for cross-device access
+- Study statistics and progress analytics
+
+## How to Run
+
+Simply open `index.html` in any modern web browser - no build tools or server required! Works completely offline once loaded.
 
 ---
 
