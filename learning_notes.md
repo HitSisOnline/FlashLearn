@@ -196,6 +196,24 @@ This project grew from a simple single-file prototype to a genuinely useful stud
 
 The app feels complete for its intended scope as a student project demonstrating core web development skills while being actually useful for studying!
 
+## 2024-12-16
+**Quick fix: Added deck deletion**
+
+Realized after using the app for a few days that I really needed to delete some test decks I created. Added a delete button next to "New Deck":
+
+**Implementation notes:**
+- Can't delete the default deck (would break everything!)
+- Shows warning if deck has cards - "This will DELETE X flashcards"
+- Automatically switches back to default deck after deletion
+- Button gets disabled when default deck is selected
+
+**What I learned:**
+- User feedback is critical for destructive actions
+- Edge case handling (like protecting default deck) is important
+- Sometimes the simplest features require the most thought
+
+This feels like a natural evolution - started missing the feature as soon as I had multiple decks to manage. Quick 30-minute addition but makes the app much more usable.
+
 ## 2024-11-18
 **Added Study Mode functionality**
 

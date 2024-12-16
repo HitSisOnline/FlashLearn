@@ -26,6 +26,7 @@ const studyProgress = document.getElementById('study-progress');
 const progressText = document.getElementById('progress-text');
 const deckSelect = document.getElementById('deck-select');
 const newDeckBtn = document.getElementById('new-deck-btn');
+const deleteDeckBtn = document.getElementById('delete-deck-btn');
 const keyboardHints = document.getElementById('keyboard-hints');
 
 // Event listeners setup
@@ -38,6 +39,7 @@ startStudyBtn.addEventListener('click', enterStudyMode);
 exitStudyBtn.addEventListener('click', exitStudyMode);
 deckSelect.addEventListener('change', handleDeckChange);
 newDeckBtn.addEventListener('click', createNewDeck);
+deleteDeckBtn.addEventListener('click', deleteDeck);
 
 // Keyboard shortcuts
 document.addEventListener('keydown', handleKeyboardShortcuts);
@@ -57,8 +59,8 @@ function saveCards() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cardsData));
         console.log('Cards saved to localStorage:', cards.length); // Debug log
     } catch (error) {
-        console.error('Failed to save cards to localStorage:', error);
-        // Could show user notification here in the future
+        // Learned about try-catch from Stack Overflow
+        console.log('Save failed:', error);
     }
 }
 
@@ -453,6 +455,9 @@ function handleDeckChange(event) {
     
     updateDisplay();
     console.log('Switched to deck:', currentDeckId);
+    
+    // Update delete button state when switching decks
+    updateDeckSelect();
 }
 
 /**
@@ -479,8 +484,50 @@ function createNewDeck() {
     currentCardIndex = 0;
     showingQuestion = true;
     updateDisplay();
+    updateDeckSelect(); // This will update the delete button state too
     
     console.log('Created new deck:', newDeck.name);
+}
+
+/**
+ * Delete the current deck (with safety checks)
+ */
+function deleteDeck() {
+    // Can't delete default deck - that would break everything
+    if (currentDeckId === 'default') {
+        alert('Cannot delete the Default Deck!');
+        return;
+    }
+    
+    // Make sure user really wants to delete
+    const currentDeck = decks.find(d => d.id === currentDeckId);
+    const deckCards = getCardsForCurrentDeck();
+    
+    let confirmMsg = `Delete deck "${currentDeck.name}"?`;
+    if (deckCards.length > 0) {
+        confirmMsg += `\n\nThis will also DELETE ${deckCards.length} flashcard(s) in this deck!`;
+    }
+    
+    if (!confirm(confirmMsg)) return;
+    
+    // Remove all cards from this deck first
+    cards = cards.filter(card => card.deckId !== currentDeckId);
+    saveCards();
+    
+    // Remove the deck itself
+    decks = decks.filter(deck => deck.id !== currentDeckId);
+    saveDecks();
+    
+    // Switch back to default deck
+    currentDeckId = 'default';
+    currentCardIndex = 0;
+    showingQuestion = true;
+    
+    // Update UI
+    updateDeckSelect();
+    updateDisplay();
+    
+    console.log('Deleted deck:', currentDeck.name);
 }
 
 /**
@@ -497,6 +544,9 @@ function updateDeckSelect() {
     });
     
     deckSelect.value = currentDeckId;
+    
+    // Update delete button state - can't delete default deck
+    deleteDeckBtn.disabled = (currentDeckId === 'default');
 }
 
 /**

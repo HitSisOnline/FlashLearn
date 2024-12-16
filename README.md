@@ -23,7 +23,8 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
 
 1. Open `index.html` in any modern web browser
 2. **Create Decks**: Use the "New Deck" button to organize cards by subject
-3. **Add Cards**: Fill in the question and answer fields, click "Add Flashcard"
+3. **Delete Decks**: Use the "🗑️ Delete Deck" button (⚠️ This deletes the deck AND all its cards!)
+4. **Add Cards**: Fill in the question and answer fields, click "Add Flashcard"
 4. **Study Mode**: Click "🎯 Start Study Mode" for focused review sessions
 5. **Navigate**: Use Previous/Next buttons or arrow keys to browse cards
 6. **Flip Cards**: Click the card or press Space to reveal answers
@@ -53,19 +54,21 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
 
 ## Development Timeline
 
-- **Oct 2024**: Initial single-file prototype with basic CRUD operations
-- **Oct 2024**: Refactored to separate CSS/JS files, improved responsive design  
-- **Nov 2024**: Added localStorage persistence and data migration
-- **Nov 2024**: Implemented study mode with progress tracking
-- **Dec 2024**: Added deck organization system for subject separation
-- **Dec 2024**: Final polish with keyboard shortcuts and enhanced mobile support
+Started this as a class project in October 2024, then kept improving it:
+- **Oct 2024**: Initial prototype for web dev coursework
+- **Nov 2024**: Added persistence and study features during semester break
+- **Dec 2024**: Final touches while learning more CSS/JS patterns
 
-## Known Issues
+## What I Learned
+Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and responsive design. The biggest challenge was figuring out the deck filtering logic - took me way longer than expected!
 
-- Safari may show minor visual glitches during card flip animations
+## Known Issues & Notes
+- **Safari Card Flips**: Safari sometimes has weird flip animations (need to investigate CSS transforms)
+- **Deck Deletion**: ⚠️ Deleting a deck permanently removes ALL cards in that deck - no undo!
+- **Default Deck**: The "Default Deck" cannot be deleted (it's needed for the app to work)
+- **Storage Limit**: Browser localStorage has size limits (~5-10MB typically)
 - No search or filtering capabilities yet
 - Limited to single browser/device (no cloud sync)
-- Deck rename/delete functionality not yet implemented
 
 ## Future Enhancements
 

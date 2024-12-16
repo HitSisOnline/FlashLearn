@@ -110,6 +110,15 @@ h1 {
     background: #059669;
 }
 
+.deck-selector button.delete-btn {
+    background: var(--danger-color);
+    margin-left: 8px;
+}
+
+.deck-selector button.delete-btn:hover:not(:disabled) {
+    background: var(--danger-hover);
+}
+
 /* Study Mode Controls */
 .study-mode-controls {
     text-align: center;
