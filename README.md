@@ -38,25 +38,21 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
 
 ### Main Interface
 ![Main Interface](screenshots/main-interface.png)
-*The main flashcard interface with deck selection and card management*
 
 ### Study Mode
 ![Study Mode](screenshots/study-mode.png)
-*Focused study mode with progress tracking and minimal distractions*
 
 ### Mobile View
 ![Mobile Responsive](screenshots/mobile-view.png)
-*Responsive design works great on mobile devices*
 
 ## Technical Details
 
-- **Pure HTML/CSS/JavaScript**: No frameworks or dependencies
+- **HTML/CSS/JavaScript**: No frameworks or dependencies
 - **Modular Architecture**: Separated CSS, JS, and HTML files
 - **localStorage Persistence**: Cards and decks automatically saved and restored
 - **Deck System**: Organize flashcards by subject with real-time filtering
 - **Study Mode**: Distraction-free interface with progress tracking  
 - **Responsive**: Uses Flexbox for mobile-friendly layout
-- **Data Migration**: Supports upgrading from older storage formats
 - **Keyboard Navigation**: Full keyboard support for efficient studying
 
 ## Academic Context
@@ -75,7 +71,6 @@ Started this as a class project in October 2024, then kept improving it:
 Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and responsive design. The biggest challenge was figuring out the deck filtering logic - took me way longer than expected! Also learned the importance of actually using your own software - that's how I discovered I needed deck deletion.
 
 ## Known Issues & Notes
-- **Safari Card Flips**: Safari sometimes has weird flip animations (need to investigate CSS transforms)
 - **Deck Deletion**: ⚠️ Deleting a deck permanently removes ALL cards in that deck - no undo!
 - **Default Deck**: The "Default Deck" cannot be deleted (it's needed for the app to work)
 - **Storage Limit**: Browser localStorage has size limits (~5-10MB typically)
@@ -94,6 +89,3 @@ Building this taught me vanilla JavaScript fundamentals, localStorage APIs, and 
 
 Simply open `index.html` in any modern web browser - no build tools or server required! Works completely offline once loaded.
 
----
-
-*Built with vanilla web technologies for learning and educational purposes.*
