@@ -13,7 +13,7 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
 - **Study Mode**: Focused review interface with progress tracking
 - **Card Navigation**: Browse through cards with Previous/Next buttons
 - **Flip Functionality**: Click to reveal answers, promoting active recall
-- **Keyboard Shortcuts**: Space (flip), arrows (navigate), Ctrl+S (study mode)
+- **Keyboard Shortcuts**: Space (flip), arrows (navigate), Shift+S (study mode)
 - **Delete Cards**: Remove unwanted flashcards
 - **Persistent Storage**: Cards and decks automatically saved to browser storage
 - **Responsive Design**: Works on desktop and mobile devices
@@ -31,7 +31,7 @@ FlashLearn is a minimal web-based flashcard app built as an academic prototype i
 7. **Keyboard Shortcuts**:
    - **Space**: Flip current card
    - **← →**: Navigate between cards  
-   - **Ctrl+S**: Toggle study mode
+   - **Shift+S**: Toggle study mode
    - **Esc**: Exit study mode
 
 ## Screenshots

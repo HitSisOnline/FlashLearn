@@ -575,7 +575,7 @@ function handleKeyboardShortcuts(event) {
             showNextCard();
             break;
         case 'KeyS':
-            if (event.ctrlKey || event.metaKey) {
+            if (event.shiftKey) {
                 event.preventDefault();
                 if (isStudyMode) {
                     exitStudyMode();
@@ -609,7 +609,7 @@ function initializeApp() {
     questionInput.focus(); // Focus on first input for immediate use
     
     // Show keyboard shortcuts hint to user
-    console.log('💡 Keyboard shortcuts: Space (flip), ← → (navigate), Ctrl+S (toggle study mode), Esc (exit study)');
+    console.log('💡 Keyboard shortcuts: Space (flip), ← → (navigate), Shift+S (toggle study mode), Esc (exit study)');
     
     // Show keyboard hints briefly on load
     showKeyboardHints();
