@@ -2,6 +2,10 @@
 
 A simple, lightweight flashcard application for studying and memorization with deck organization and study modes.
 
+## 🚀 Live Demo
+
+**Try the app live**: [https://hitsisonline.github.io/FlashLearn/](https://hitsisonline.github.io/FlashLearn/)
+
 ## Overview
 
 FlashLearn is a minimal web-based flashcard app built as an academic prototype in October 2024, then progressively enhanced through December 2024. **Prototype built Oct 2024 during coursework; enhancements Nov–Dec 2024 while learning Git and best practices.** It allows users to create, organize, and review flashcards for effective learning across multiple subjects.
