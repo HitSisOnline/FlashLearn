@@ -3,14 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlashLearn - Simple Flashcard App</title>
+    <title>FlashLearn - 3D Gamified Flashcards & Spaced Repetition</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- CDN External Libraries: Three.js (3D Graphics), Chart.js (Analytics), Canvas-Confetti (Animations) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>FlashLearn</h1>
+    <div class="app-header">
+        <h1>⚡ FlashLearn 3D</h1>
         
-        <!-- Deck Selection -->
+        <!-- Player Gamification Bar -->
+        <div class="player-bar" id="player-bar">
+            <div class="stat-badge level-badge" id="player-level">Level 1</div>
+            <div class="xp-bar-container" title="XP Progress to next level">
+                <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%;"></div>
+                <span class="xp-text" id="xp-text">0 / 100 XP</span>
+            </div>
+            <div class="stat-badge streak-badge" id="player-streak" title="Daily Study Streak">🔥 0 Days</div>
+            <div class="stat-badge combo-badge" id="player-combo" title="Current Review Combo">⚡ Combo x0</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Deck Selection & Control Panel -->
         <div class="deck-controls">
             <div class="deck-selector">
                 <label for="deck-select">Current Deck:</label>
@@ -20,31 +37,49 @@
                 <button id="new-deck-btn" type="button" title="Create New Deck">+ New Deck</button>
                 <button id="delete-deck-btn" type="button" title="Delete Current Deck" class="delete-btn">🗑️ Delete Deck</button>
             </div>
+
+            <div class="toolbar-actions">
+                <input type="text" id="search-input" placeholder="🔍 Search cards in deck..." />
+                <button id="shuffle-btn" type="button" class="secondary-btn">🔀 Shuffle</button>
+                <button id="export-json-btn" type="button" class="secondary-btn">💾 Export JSON</button>
+                <button id="export-csv-btn" type="button" class="secondary-btn">📊 Export CSV</button>
+                <label class="import-btn-label">
+                    📥 Import
+                    <input type="file" id="import-file-input" accept=".json,.csv" style="display: none;" />
+                </label>
+            </div>
         </div>
         
-        <!-- Study Mode Toggle -->
+        <!-- Mode Switcher Controls -->
         <div class="study-mode-controls">
-            <button id="start-study-btn" type="button">🎯 Start Study Mode</button>
-            <button id="exit-study-btn" type="button" class="hidden">📖 Exit Study Mode</button>
+            <button id="start-study-btn" type="button" class="primary-btn">🎯 Start Study Mode</button>
+            <button id="toggle-3d-btn" type="button" class="mode-toggle-btn">🎮 3D Arena: OFF</button>
+            <button id="open-stats-btn" type="button" class="secondary-btn">📈 Analytics & Badges</button>
+            <button id="exit-study-btn" type="button" class="danger-btn hidden">📖 Exit Study Mode</button>
         </div>
         
-        <!-- Add new flashcard form -->
+        <!-- Add / Edit Flashcard Form -->
         <form id="add-card-form">
-            <div class="form-group">
-                <label for="question">Question:</label>
-                <textarea id="question" placeholder="Enter your question here..." required></textarea>
+            <div class="form-group form-row">
+                <div>
+                    <label for="question">Question:</label>
+                    <textarea id="question" placeholder="Enter your question here..." required></textarea>
+                </div>
+                <div>
+                    <label for="answer">Answer:</label>
+                    <textarea id="answer" placeholder="Enter the answer here..." required></textarea>
+                </div>
             </div>
             <div class="form-group">
-                <label for="answer">Answer:</label>
-                <textarea id="answer" placeholder="Enter the answer here..." required></textarea>
-            </div>
-            <div class="form-group">
-                <button type="submit">Add Flashcard</button>
+                <button type="submit" class="primary-btn">+ Add Flashcard</button>
             </div>
         </form>
 
-        <!-- Card display area -->
-        <div class="card-display">
+        <!-- 3D Scene View Container -->
+        <div id="three-container" class="hidden"></div>
+
+        <!-- 2D Card Display Area -->
+        <div class="card-display" id="card-display">
             <div class="card-info">
                 <span id="card-counter">No cards available</span>
                 <span id="study-progress" class="hidden">Progress: <span id="progress-text">0 / 0</span></span>
@@ -56,19 +91,67 @@
                 </div>
             </div>
             
-            <!-- Navigation controls -->
-            <div class="controls">
+            <!-- Standard Navigation Controls -->
+            <div class="controls" id="standard-controls">
                 <button id="prev-btn" disabled>← Previous</button>
-                <button id="flip-btn" disabled>Flip Card</button>
+                <button id="flip-btn" disabled>Flip Card (Space)</button>
                 <button id="next-btn" disabled>Next →</button>
-                <button id="delete-btn" class="delete-btn" disabled>Delete Card</button>
+                <button id="edit-btn" class="secondary-btn" disabled>✏️ Edit</button>
+                <button id="delete-btn" class="delete-btn" disabled>🗑️ Delete Card</button>
+            </div>
+
+            <!-- SM-2 Spaced Repetition Rating Bar (Shown in Study Mode) -->
+            <div class="sm2-rating-bar hidden" id="sm2-rating-bar">
+                <span class="sm2-prompt">Rate Recall Difficulty:</span>
+                <div class="sm2-buttons">
+                    <button id="sm2-again" class="sm2-btn rating-again">🔴 Again (<span id="sm2-again-lbl">1d</span>)</button>
+                    <button id="sm2-hard" class="sm2-btn rating-hard">🟠 Hard (<span id="sm2-hard-lbl">1d</span>)</button>
+                    <button id="sm2-good" class="sm2-btn rating-good">🟢 Good (<span id="sm2-good-lbl">6d</span>)</button>
+                    <button id="sm2-easy" class="sm2-btn rating-easy">🔵 Easy (<span id="sm2-easy-lbl">10d</span>)</button>
+                </div>
             </div>
         </div>
         
         <!-- Keyboard shortcuts hint -->
         <div class="keyboard-hints" id="keyboard-hints">
             <strong>Keyboard Shortcuts:</strong><br>
-            Space: Flip card | ← →: Navigate | Shift+S: Study mode | Esc: Exit study
+            Space: Flip card | ← →: Navigate | 1/2/3/4: SM-2 Ratings | Shift+S: Study mode | Esc: Exit
+        </div>
+    </div>
+
+    <!-- Analytics & Badges Modal -->
+    <div id="stats-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📈 Study Analytics & Badges</h2>
+                <button id="close-stats-btn" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="analytics-grid">
+                    <div class="chart-box">
+                        <canvas id="mastery-chart"></canvas>
+                    </div>
+                    <div class="stats-summary">
+                        <div class="summary-card">
+                            <span class="summary-val" id="stat-total-reviews">0</span>
+                            <span class="summary-lbl">Total Reviews</span>
+                        </div>
+                        <div class="summary-card">
+                            <span class="summary-val" id="stat-accuracy">0%</span>
+                            <span class="summary-lbl">Accuracy</span>
+                        </div>
+                        <div class="summary-card">
+                            <span class="summary-val" id="stat-max-combo">0</span>
+                            <span class="summary-lbl">Max Combo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>🏆 Achievement Badges</h3>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges populated by JS -->
+                </div>
+            </div>
         </div>
     </div>
 
