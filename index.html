@@ -10,12 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body>
+<body class="light-mode">
     <div class="app-header">
         <h1>⚡ FlashLearn 3D</h1>
         
-        <!-- Player Gamification Bar -->
+        <!-- Player Gamification Bar & Theme Switcher -->
         <div class="player-bar" id="player-bar">
+            <button id="theme-toggle-btn" type="button" class="theme-toggle-btn" title="Toggle Light / Dark Mode">☀️ Light</button>
             <div class="stat-badge level-badge" id="player-level">Level 1</div>
             <div class="xp-bar-container" title="XP Progress to next level">
                 <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%;"></div>

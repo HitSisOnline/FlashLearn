@@ -7,6 +7,7 @@ let isStudyMode = false;
 let is3DMode = false;
 let currentDeckId = 'default';
 let searchQuery = '';
+let currentTheme = 'light';
 
 // Three.js 3D Arena Variables
 let scene, camera, renderer, cardMesh, canvasTexture, canvasContext, canvasElement, stars, gridHelper;
@@ -44,6 +45,7 @@ const ALL_BADGES = [
 const STORAGE_KEY = 'flashlearn-cards-v2';
 const DECKS_STORAGE_KEY = 'flashlearn-decks-v2';
 const STATS_STORAGE_KEY = 'flashlearn-player-stats-v2';
+const THEME_STORAGE_KEY = 'flashlearn-theme';
 
 // SM-2 Spaced Repetition Engine Implementation
 const SM2 = {
@@ -180,7 +182,7 @@ function checkBadges() {
 // DOM Element Caching
 let addCardForm, questionInput, answerInput, cardContainer, cardCounter;
 let prevBtn, nextBtn, flipBtn, editBtn, deleteBtn;
-let startStudyBtn, exitStudyBtn, toggle3DBtn, openStatsBtn, closeStatsBtn;
+let startStudyBtn, exitStudyBtn, toggle3DBtn, openStatsBtn, closeStatsBtn, themeToggleBtn;
 let studyProgress, progressText, deckSelect, newDeckBtn, deleteDeckBtn;
 let searchInput, shuffleBtn, exportJsonBtn, exportCsvBtn, importFileInput;
 let sm2RatingBar, sm2AgainBtn, sm2HardBtn, sm2GoodBtn, sm2EasyBtn;
@@ -203,6 +205,7 @@ function cacheDOMElements() {
     toggle3DBtn = document.getElementById('toggle-3d-btn');
     openStatsBtn = document.getElementById('open-stats-btn');
     closeStatsBtn = document.getElementById('close-stats-btn');
+    themeToggleBtn = document.getElementById('theme-toggle-btn');
     studyProgress = document.getElementById('study-progress');
     progressText = document.getElementById('progress-text');
     deckSelect = document.getElementById('deck-select');
@@ -238,6 +241,7 @@ function bindEventListeners() {
     toggle3DBtn.addEventListener('click', toggle3DMode);
     openStatsBtn.addEventListener('click', openStatsModal);
     closeStatsBtn.addEventListener('click', closeStatsModal);
+    themeToggleBtn.addEventListener('click', toggleTheme);
     deckSelect.addEventListener('change', handleDeckChange);
     newDeckBtn.addEventListener('click', createNewDeck);
     deleteDeckBtn.addEventListener('click', deleteDeck);
@@ -255,6 +259,38 @@ function bindEventListeners() {
     sm2EasyBtn.addEventListener('click', () => handleSM2Rating(5));
 
     document.addEventListener('keydown', handleKeyboardShortcuts);
+}
+
+/**
+ * Toggle Light and Dark theme mode
+ */
+function toggleTheme() {
+    if (currentTheme === 'light') {
+        currentTheme = 'dark';
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        themeToggleBtn.textContent = '🌙 Dark';
+    } else {
+        currentTheme = 'light';
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        themeToggleBtn.textContent = '☀️ Light';
+    }
+    localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+    currentTheme = savedTheme;
+    if (currentTheme === 'dark') {
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        if (themeToggleBtn) themeToggleBtn.textContent = '🌙 Dark';
+    } else {
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        if (themeToggleBtn) themeToggleBtn.textContent = '☀️ Light';
+    }
 }
 
 /**
@@ -293,7 +329,6 @@ function updateDisplay() {
     const content = showingQuestion ? currentCard.question : currentCard.answer;
     const cardType = showingQuestion ? 'Question' : 'Answer';
 
-    // 2D Card view update with gradient styling
     const cardBgClass = showingQuestion ? 'question-card-bg' : 'answer-card-bg';
     cardContainer.innerHTML = `
         <div class="card ${cardBgClass}" id="active-2d-card">
@@ -303,12 +338,10 @@ function updateDisplay() {
 
     document.getElementById('active-2d-card').addEventListener('click', flipCard);
 
-    // Update 3D Texture if active
     if (is3DMode) {
         update3DCardTexture(content, showingQuestion);
     }
 
-    // Counter & Progress
     cardCounter.textContent = `Card ${currentCardIndex + 1} of ${active.length} (${cardType})`;
 
     if (isStudyMode) {
@@ -340,14 +373,12 @@ function handleSM2Rating(quality) {
     const currentCard = active[currentCardIndex];
     const sm2Result = SM2.calculate(currentCard, quality);
 
-    // Apply SM2 stats to card
     currentCard.interval = sm2Result.interval;
     currentCard.repetitions = sm2Result.repetitions;
     currentCard.easeFactor = sm2Result.easeFactor;
     currentCard.dueDate = sm2Result.dueDate;
     currentCard.lastReviewed = sm2Result.lastReviewed;
 
-    // Gamification rewards
     playerStats.totalReviews++;
     if (quality >= 3) {
         playerStats.correctReviews++;
@@ -368,14 +399,12 @@ function handleSM2Rating(quality) {
     savePlayerStats();
     updateGamificationUI();
 
-    // Move to next card in study queue
     if (currentCardIndex < active.length - 1) {
         currentCardIndex++;
         showingQuestion = true;
         targetRotationY = 0;
         updateDisplay();
     } else {
-        // Completed review session
         if (typeof confetti === 'function') {
             confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
         }
@@ -641,7 +670,7 @@ function renderMasteryChart() {
         options: {
             responsive: true,
             plugins: {
-                title: { display: true, text: 'Card Mastery Distribution', color: '#ffffff' }
+                title: { display: true, text: 'Card Mastery Distribution' }
             }
         }
     });
@@ -717,12 +746,10 @@ function init3DArena() {
     pointLight.position.set(-3, -2, 3);
     scene.add(pointLight);
 
-    // Add retro arcade grid floor
     gridHelper = new THREE.GridHelper(20, 20, 0xec4899, 0x3b82f6);
     gridHelper.position.y = -2.2;
     scene.add(gridHelper);
 
-    // Particle Stars
     const starGeo = new THREE.BufferGeometry();
     const starCount = 400;
     const starPositions = new Float32Array(starCount * 3);
@@ -734,7 +761,6 @@ function init3DArena() {
     stars = new THREE.Points(starGeo, starMat);
     scene.add(stars);
 
-    // Dynamic 2D Canvas texture for 3D Card
     canvasElement = document.createElement('canvas');
     canvasElement.width = 512;
     canvasElement.height = 320;
@@ -771,7 +797,6 @@ function onWindowResize() {
 function update3DCardTexture(text, isQuestion) {
     if (!canvasContext) return;
 
-    // Gradient card background in 3D
     const gradient = canvasContext.createLinearGradient(0, 0, 512, 320);
     if (isQuestion) {
         gradient.addColorStop(0, '#1e1b4b');
@@ -784,18 +809,15 @@ function update3DCardTexture(text, isQuestion) {
     canvasContext.fillStyle = gradient;
     canvasContext.fillRect(0, 0, 512, 320);
 
-    // Neon Glow Border
     canvasContext.lineWidth = 14;
     canvasContext.strokeStyle = isQuestion ? '#ec4899' : '#10b981';
     canvasContext.strokeRect(7, 7, 498, 306);
 
-    // Header Tag
     canvasContext.fillStyle = isQuestion ? '#f43f5e' : '#34d399';
     canvasContext.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
     canvasContext.textAlign = 'center';
     canvasContext.fillText(isQuestion ? '⚡ QUESTION' : '✨ ANSWER', 256, 52);
 
-    // Main Content
     canvasContext.fillStyle = '#ffffff';
     canvasContext.font = '22px "Plus Jakarta Sans", sans-serif';
 
@@ -1096,6 +1118,7 @@ function triggerBadgeNotification(badge) {
 function initializeApp() {
     cacheDOMElements();
     bindEventListeners();
+    loadTheme();
     loadDecks();
     loadCards();
     loadPlayerStats();
