@@ -9,10 +9,78 @@ let currentDeckId = 'default';
 let searchQuery = '';
 let currentTheme = 'light';
 
+// WebAudio SoundEngine
+class SoundEngine {
+    constructor() {
+        this.ctx = null;
+    }
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+    playWhoosh(freqOffset = 0) {
+        try {
+            this.init();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(180 + freqOffset, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.22);
+            gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.22);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.23);
+        } catch (e) { console.error(e); }
+    }
+    playFlip() {
+        try {
+            this.init();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.1);
+        } catch (e) { console.error(e); }
+    }
+    playScore(success = true) {
+        try {
+            this.init();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const startFreq = success ? 440 : 220;
+            const targetFreq = success ? 880 : 130;
+            osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(targetFreq, this.ctx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.07, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.26);
+        } catch (e) { console.error(e); }
+    }
+}
+const audio = new SoundEngine();
+
 // Three.js 3D Arena Variables
 let scene, camera, renderer, cardMesh, canvasTexture, canvasContext, canvasElement, stars, gridHelper;
 let targetRotationY = 0;
 let currentRotationY = 0;
+
+// Drag & Gesture State
+let isDragging = false;
+let startX = 0, currentX = 0;
+let startY = 0, currentY = 0;
 
 // Gamification State
 let playerStats = {
@@ -93,16 +161,10 @@ const SM2 = {
     }
 };
 
-/**
- * Calculate XP required for next level
- */
 function getXPForNextLevel(level) {
     return level * 100;
 }
 
-/**
- * Award XP to player and handle leveling up
- */
 function awardXP(amount) {
     playerStats.xp += amount;
     let xpNeeded = getXPForNextLevel(playerStats.level);
@@ -124,9 +186,6 @@ function awardXP(amount) {
     updateGamificationUI();
 }
 
-/**
- * Update daily study streak
- */
 function updateStreak() {
     const today = new Date().toDateString();
     if (playerStats.lastStudyDate) {
@@ -149,9 +208,6 @@ function updateStreak() {
     updateGamificationUI();
 }
 
-/**
- * Check and unlock achievement badges
- */
 function checkBadges() {
     const newlyUnlocked = [];
 
@@ -259,11 +315,9 @@ function bindEventListeners() {
     sm2EasyBtn.addEventListener('click', () => handleSM2Rating(5));
 
     document.addEventListener('keydown', handleKeyboardShortcuts);
+    window.addEventListener('pointermove', handlePointerMove);
 }
 
-/**
- * Toggle Light and Dark theme mode
- */
 function toggleTheme() {
     if (currentTheme === 'light') {
         currentTheme = 'dark';
@@ -293,9 +347,6 @@ function loadTheme() {
     }
 }
 
-/**
- * Filter active cards based on deck and search query
- */
 function getActiveCards() {
     return cards.filter(card => {
         const matchesDeck = card.deckId === currentDeckId;
@@ -306,9 +357,6 @@ function getActiveCards() {
     });
 }
 
-/**
- * Display current card
- */
 function updateDisplay() {
     const active = getActiveCards();
 
@@ -329,14 +377,24 @@ function updateDisplay() {
     const content = showingQuestion ? currentCard.question : currentCard.answer;
     const cardType = showingQuestion ? 'Question' : 'Answer';
 
-    const cardBgClass = showingQuestion ? 'question-card-bg' : 'answer-card-bg';
+    const cardTagText = showingQuestion ? 'CONCEPT' : 'DEEP DIVE';
+    const cardTipText = showingQuestion ? 'Tap or click to flip' : 'Rate difficulty or click below';
+
     cardContainer.innerHTML = `
-        <div class="card ${cardBgClass}" id="active-2d-card">
-            <div class="card-content">${content}</div>
+        <div class="card" id="active-2d-card">
+            <div class="card-face">
+                <span class="card-tag">${cardTagText}</span>
+                <div class="card-content">${content}</div>
+                <div class="card-tip">
+                    <span>${cardTipText}</span>
+                    <span class="key-cap">SPACE</span>
+                </div>
+            </div>
         </div>
     `;
 
-    document.getElementById('active-2d-card').addEventListener('click', flipCard);
+    const cardElem = document.getElementById('active-2d-card');
+    bindCardPointerEvents(cardElem);
 
     if (is3DMode) {
         update3DCardTexture(content, showingQuestion);
@@ -353,8 +411,87 @@ function updateDisplay() {
 }
 
 /**
- * Handle SM2 Intervals preview on rating buttons
+ * Handle specular 3D tilt & pointer moves for cards
  */
+function handlePointerMove(e) {
+    document.documentElement.style.setProperty('--mouse-x', `${(e.clientX / window.innerWidth) * 100}%`);
+    document.documentElement.style.setProperty('--mouse-y', `${(e.clientY / window.innerHeight) * 100}%`);
+
+    const activeCard = document.getElementById('active-2d-card');
+    if (!activeCard || isDragging) return;
+
+    const rect = activeCard.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const tiltX = (y - centerY) / 12;
+        const tiltY = (centerX - x) / 12;
+
+        activeCard.style.setProperty('--rot-x', `${tiltX}deg`);
+        activeCard.style.setProperty('--rot-y', `${tiltY}deg`);
+        activeCard.style.setProperty('--shine-x', `${x}px`);
+        activeCard.style.setProperty('--shine-y', `${y}px`);
+    } else {
+        activeCard.style.setProperty('--rot-x', '0deg');
+        activeCard.style.setProperty('--rot-y', '0deg');
+    }
+}
+
+/**
+ * Drag & Swipe Touch Gestures
+ */
+function bindCardPointerEvents(cardElem) {
+    if (!cardElem) return;
+
+    cardElem.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        cardElem.style.transition = 'none';
+        cardElem.setPointerCapture(e.pointerId);
+    });
+
+    cardElem.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+
+        const rotZ = currentX * 0.06;
+        cardElem.style.setProperty('--tx', `${currentX}px`);
+        cardElem.style.setProperty('--ty', `${currentY}px`);
+        cardElem.style.setProperty('--rot-z', `${rotZ}deg`);
+    });
+
+    cardElem.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        cardElem.releasePointerCapture(e.pointerId);
+
+        const threshold = 100;
+        if (currentX > threshold) {
+            audio.playWhoosh(100);
+            if (isStudyMode) handleSM2Rating(5);
+            else showNextCard();
+        } else if (currentX < -threshold) {
+            audio.playWhoosh(-50);
+            if (isStudyMode) handleSM2Rating(1);
+            else showPreviousCard();
+        } else if (Math.abs(currentX) < 8 && Math.abs(currentY) < 8) {
+            flipCard();
+        } else {
+            cardElem.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            cardElem.style.setProperty('--tx', '0px');
+            cardElem.style.setProperty('--ty', '0px');
+            cardElem.style.setProperty('--rot-z', '0deg');
+        }
+        currentX = 0;
+        currentY = 0;
+    });
+}
+
 function updateSM2Labels(card) {
     if (!card) return;
     sm2AgainLbl.textContent = SM2.getIntervalLabel(card, 1);
@@ -363,9 +500,6 @@ function updateSM2Labels(card) {
     sm2EasyLbl.textContent = SM2.getIntervalLabel(card, 5);
 }
 
-/**
- * Handle rating submission for Spaced Repetition
- */
 function handleSM2Rating(quality) {
     const active = getActiveCards();
     if (active.length === 0) return;
@@ -381,6 +515,7 @@ function handleSM2Rating(quality) {
 
     playerStats.totalReviews++;
     if (quality >= 3) {
+        audio.playScore(true);
         playerStats.correctReviews++;
         playerStats.combo++;
         if (playerStats.combo > playerStats.maxCombo) {
@@ -391,6 +526,7 @@ function handleSM2Rating(quality) {
         if (quality === 5) xpGained += 10;
         awardXP(xpGained);
     } else {
+        audio.playScore(false);
         playerStats.combo = 0;
     }
 
@@ -405,9 +541,7 @@ function handleSM2Rating(quality) {
         targetRotationY = 0;
         updateDisplay();
     } else {
-        if (typeof confetti === 'function') {
-            confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
-        }
+        burstConfetti();
         setTimeout(() => {
             alert(`🎉 Study session complete! Combo: ${playerStats.combo}. Keep up the daily streak!`);
             exitStudyMode();
@@ -437,6 +571,7 @@ function disableAllButtons() {
 
 function showPreviousCard() {
     if (currentCardIndex > 0) {
+        audio.playWhoosh(-30);
         currentCardIndex--;
         showingQuestion = true;
         targetRotationY = 0;
@@ -447,6 +582,7 @@ function showPreviousCard() {
 function showNextCard() {
     const active = getActiveCards();
     if (currentCardIndex < active.length - 1) {
+        audio.playWhoosh(30);
         currentCardIndex++;
         showingQuestion = true;
         targetRotationY = 0;
@@ -457,6 +593,7 @@ function showNextCard() {
 function flipCard() {
     const active = getActiveCards();
     if (active.length > 0) {
+        audio.playFlip();
         showingQuestion = !showingQuestion;
         targetRotationY += Math.PI;
         updateDisplay();
@@ -614,9 +751,6 @@ function handleSearch(e) {
     updateDisplay();
 }
 
-/**
- * Analytics Modal & Chart.js Integration
- */
 function openStatsModal() {
     statsModal.classList.remove('hidden');
 
@@ -642,8 +776,8 @@ function renderBadgesGrid() {
         card.innerHTML = `
             <div class="badge-icon">${badge.icon}</div>
             <div>
-                <div class="badge-title">${badge.name}</div>
-                <div class="badge-desc">${badge.desc}</div>
+                <div class="badge-title" style="font-weight:700;">${badge.name}</div>
+                <div class="badge-desc" style="font-size:0.8rem;">${badge.desc}</div>
             </div>
         `;
         badgesGrid.appendChild(card);
@@ -664,7 +798,7 @@ function renderMasteryChart() {
             labels: ['New', 'Learning', 'Mastered'],
             datasets: [{
                 data: [newCards, learning, mastered],
-                backgroundColor: ['#ec4899', '#f59e0b', '#10b981']
+                backgroundColor: ['#38bdf8', '#f59e0b', '#4ade80']
             }]
         },
         options: {
@@ -718,14 +852,14 @@ function handleKeyboardShortcuts(event) {
 }
 
 /**
- * Three.js 3D Arcade Arena Setup
+ * Three.js 3D Arena
  */
 function init3DArena() {
     const container = document.getElementById('three-container');
     if (!container || scene) return;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x090d16);
+    scene.background = new THREE.Color(0x08090d);
 
     camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(0, 0, 6.5);
@@ -738,28 +872,9 @@ function init3DArena() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xec4899, 1.2);
+    const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
     dirLight.position.set(5, 5, 5);
     scene.add(dirLight);
-
-    const pointLight = new THREE.PointLight(0x8b5cf6, 1.5, 12);
-    pointLight.position.set(-3, -2, 3);
-    scene.add(pointLight);
-
-    gridHelper = new THREE.GridHelper(20, 20, 0xec4899, 0x3b82f6);
-    gridHelper.position.y = -2.2;
-    scene.add(gridHelper);
-
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 400;
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i++) {
-        starPositions[i] = (Math.random() - 0.5) * 22;
-    }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.PointsMaterial({ color: 0xf43f5e, size: 0.06 });
-    stars = new THREE.Points(starGeo, starMat);
-    scene.add(stars);
 
     canvasElement = document.createElement('canvas');
     canvasElement.width = 512;
@@ -797,26 +912,17 @@ function onWindowResize() {
 function update3DCardTexture(text, isQuestion) {
     if (!canvasContext) return;
 
-    const gradient = canvasContext.createLinearGradient(0, 0, 512, 320);
-    if (isQuestion) {
-        gradient.addColorStop(0, '#1e1b4b');
-        gradient.addColorStop(1, '#311042');
-    } else {
-        gradient.addColorStop(0, '#064e3b');
-        gradient.addColorStop(1, '#022c22');
-    }
-
-    canvasContext.fillStyle = gradient;
+    canvasContext.fillStyle = isQuestion ? '#1e1b4b' : '#064e3b';
     canvasContext.fillRect(0, 0, 512, 320);
 
-    canvasContext.lineWidth = 14;
-    canvasContext.strokeStyle = isQuestion ? '#ec4899' : '#10b981';
-    canvasContext.strokeRect(7, 7, 498, 306);
+    canvasContext.lineWidth = 12;
+    canvasContext.strokeStyle = isQuestion ? '#38bdf8' : '#4ade80';
+    canvasContext.strokeRect(6, 6, 500, 308);
 
-    canvasContext.fillStyle = isQuestion ? '#f43f5e' : '#34d399';
-    canvasContext.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
+    canvasContext.fillStyle = isQuestion ? '#38bdf8' : '#4ade80';
+    canvasContext.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
     canvasContext.textAlign = 'center';
-    canvasContext.fillText(isQuestion ? '⚡ QUESTION' : '✨ ANSWER', 256, 52);
+    canvasContext.fillText(isQuestion ? 'CONCEPT' : 'DEEP DIVE', 256, 50);
 
     canvasContext.fillStyle = '#ffffff';
     canvasContext.font = '22px "Plus Jakarta Sans", sans-serif';
@@ -842,8 +948,6 @@ function update3DCardTexture(text, isQuestion) {
 
 function animate3D() {
     requestAnimationFrame(animate3D);
-
-    if (stars) stars.rotation.y += 0.0008;
 
     if (cardMesh) {
         cardMesh.position.y = Math.sin(Date.now() * 0.0025) * 0.12;
@@ -1101,17 +1205,19 @@ function loadDecks() {
     }
 }
 
-function triggerLevelUpAnimation(newLevel) {
+function burstConfetti() {
     if (typeof confetti === 'function') {
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
     }
+}
+
+function triggerLevelUpAnimation(newLevel) {
+    burstConfetti();
     console.log(`🎉 Level Up! You reached level ${newLevel}`);
 }
 
 function triggerBadgeNotification(badge) {
-    if (typeof confetti === 'function') {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
-    }
+    burstConfetti();
     console.log(`🏆 Badge Unlocked: ${badge.name} (${badge.icon}) - ${badge.desc}`);
 }
 
