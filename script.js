@@ -9,7 +9,7 @@ let currentDeckId = 'default';
 let searchQuery = '';
 
 // Three.js 3D Arena Variables
-let scene, camera, renderer, cardMesh, canvasTexture, canvasContext, canvasElement, stars;
+let scene, camera, renderer, cardMesh, canvasTexture, canvasContext, canvasElement, stars, gridHelper;
 let targetRotationY = 0;
 let currentRotationY = 0;
 
@@ -293,9 +293,10 @@ function updateDisplay() {
     const content = showingQuestion ? currentCard.question : currentCard.answer;
     const cardType = showingQuestion ? 'Question' : 'Answer';
 
-    // 2D Card view update
+    // 2D Card view update with gradient styling
+    const cardBgClass = showingQuestion ? 'question-card-bg' : 'answer-card-bg';
     cardContainer.innerHTML = `
-        <div class="card" id="active-2d-card">
+        <div class="card ${cardBgClass}" id="active-2d-card">
             <div class="card-content">${content}</div>
         </div>
     `;
@@ -634,13 +635,13 @@ function renderMasteryChart() {
             labels: ['New', 'Learning', 'Mastered'],
             datasets: [{
                 data: [newCards, learning, mastered],
-                backgroundColor: ['#6366f1', '#f59e0b', '#10b981']
+                backgroundColor: ['#ec4899', '#f59e0b', '#10b981']
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                title: { display: true, text: 'Card Mastery Distribution' }
+                title: { display: true, text: 'Card Mastery Distribution', color: '#ffffff' }
             }
         }
     });
@@ -688,59 +689,66 @@ function handleKeyboardShortcuts(event) {
 }
 
 /**
- * Three.js 3D Study Arena Setup
+ * Three.js 3D Arcade Arena Setup
  */
 function init3DArena() {
     const container = document.getElementById('three-container');
     if (!container || scene) return;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f172a);
+    scene.background = new THREE.Color(0x090d16);
 
     camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.z = 6;
+    camera.position.set(0, 0, 6.5);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x6366f1, 0.8);
+    const dirLight = new THREE.DirectionalLight(0xec4899, 1.2);
     dirLight.position.set(5, 5, 5);
     scene.add(dirLight);
 
-    const pointLight = new THREE.PointLight(0xa855f7, 1, 10);
-    pointLight.position.set(-3, -2, 2);
+    const pointLight = new THREE.PointLight(0x8b5cf6, 1.5, 12);
+    pointLight.position.set(-3, -2, 3);
     scene.add(pointLight);
 
+    // Add retro arcade grid floor
+    gridHelper = new THREE.GridHelper(20, 20, 0xec4899, 0x3b82f6);
+    gridHelper.position.y = -2.2;
+    scene.add(gridHelper);
+
+    // Particle Stars
     const starGeo = new THREE.BufferGeometry();
-    const starCount = 300;
+    const starCount = 400;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i++) {
-        starPositions[i] = (Math.random() - 0.5) * 20;
+        starPositions[i] = (Math.random() - 0.5) * 22;
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.PointsMaterial({ color: 0x818cf8, size: 0.05 });
+    const starMat = new THREE.PointsMaterial({ color: 0xf43f5e, size: 0.06 });
     stars = new THREE.Points(starGeo, starMat);
     scene.add(stars);
 
+    // Dynamic 2D Canvas texture for 3D Card
     canvasElement = document.createElement('canvas');
     canvasElement.width = 512;
     canvasElement.height = 320;
     canvasContext = canvasElement.getContext('2d');
     canvasTexture = new THREE.CanvasTexture(canvasElement);
 
-    const cardGeo = new THREE.BoxGeometry(3.2, 2.0, 0.08);
+    const cardGeo = new THREE.BoxGeometry(3.4, 2.1, 0.08);
     const materials = [
-        new THREE.MeshStandardMaterial({ color: 0x475569 }),
-        new THREE.MeshStandardMaterial({ color: 0x475569 }),
-        new THREE.MeshStandardMaterial({ color: 0x475569 }),
-        new THREE.MeshStandardMaterial({ color: 0x475569 }),
-        new THREE.MeshStandardMaterial({ map: canvasTexture, roughness: 0.3 }),
-        new THREE.MeshStandardMaterial({ map: canvasTexture, roughness: 0.3 })
+        new THREE.MeshStandardMaterial({ color: 0x1e1b4b }),
+        new THREE.MeshStandardMaterial({ color: 0x1e1b4b }),
+        new THREE.MeshStandardMaterial({ color: 0x1e1b4b }),
+        new THREE.MeshStandardMaterial({ color: 0x1e1b4b }),
+        new THREE.MeshStandardMaterial({ map: canvasTexture, roughness: 0.2 }),
+        new THREE.MeshStandardMaterial({ map: canvasTexture, roughness: 0.2 })
     ];
 
     cardMesh = new THREE.Mesh(cardGeo, materials);
@@ -763,31 +771,44 @@ function onWindowResize() {
 function update3DCardTexture(text, isQuestion) {
     if (!canvasContext) return;
 
-    canvasContext.fillStyle = isQuestion ? '#ffffff' : '#f0fdf4';
+    // Gradient card background in 3D
+    const gradient = canvasContext.createLinearGradient(0, 0, 512, 320);
+    if (isQuestion) {
+        gradient.addColorStop(0, '#1e1b4b');
+        gradient.addColorStop(1, '#311042');
+    } else {
+        gradient.addColorStop(0, '#064e3b');
+        gradient.addColorStop(1, '#022c22');
+    }
+
+    canvasContext.fillStyle = gradient;
     canvasContext.fillRect(0, 0, 512, 320);
 
-    canvasContext.lineWidth = 12;
-    canvasContext.strokeStyle = isQuestion ? '#6366f1' : '#10b981';
-    canvasContext.strokeRect(6, 6, 500, 308);
+    // Neon Glow Border
+    canvasContext.lineWidth = 14;
+    canvasContext.strokeStyle = isQuestion ? '#ec4899' : '#10b981';
+    canvasContext.strokeRect(7, 7, 498, 306);
 
-    canvasContext.fillStyle = isQuestion ? '#4f46e5' : '#059669';
-    canvasContext.font = 'bold 24px system-ui, sans-serif';
+    // Header Tag
+    canvasContext.fillStyle = isQuestion ? '#f43f5e' : '#34d399';
+    canvasContext.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
     canvasContext.textAlign = 'center';
-    canvasContext.fillText(isQuestion ? 'QUESTION' : 'ANSWER', 256, 48);
+    canvasContext.fillText(isQuestion ? '⚡ QUESTION' : '✨ ANSWER', 256, 52);
 
-    canvasContext.fillStyle = '#1e293b';
-    canvasContext.font = '22px system-ui, sans-serif';
+    // Main Content
+    canvasContext.fillStyle = '#ffffff';
+    canvasContext.font = '22px "Plus Jakarta Sans", sans-serif';
 
     const words = text.split(' ');
     let line = '';
-    let y = 120;
+    let y = 130;
     for (let n = 0; n < words.length; n++) {
         let testLine = line + words[n] + ' ';
         let metrics = canvasContext.measureText(testLine);
-        if (metrics.width > 440 && n > 0) {
+        if (metrics.width > 420 && n > 0) {
             canvasContext.fillText(line, 256, y);
             line = words[n] + ' ';
-            y += 32;
+            y += 34;
         } else {
             line = testLine;
         }
@@ -800,10 +821,10 @@ function update3DCardTexture(text, isQuestion) {
 function animate3D() {
     requestAnimationFrame(animate3D);
 
-    if (stars) stars.rotation.y += 0.0005;
+    if (stars) stars.rotation.y += 0.0008;
 
     if (cardMesh) {
-        cardMesh.position.y = Math.sin(Date.now() * 0.002) * 0.1;
+        cardMesh.position.y = Math.sin(Date.now() * 0.0025) * 0.12;
         currentRotationY += (targetRotationY - currentRotationY) * 0.1;
         cardMesh.rotation.y = currentRotationY;
     }
